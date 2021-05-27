@@ -1,7 +1,7 @@
 # K3D Rancher Setup
 
 ## What is this?
-This repo contains a basic structure to allow you to easily roll K3D setups, with or without Rancher.
+This repo contains a basic structure to allow you to easily roll K3D setups, with or without Rancher. This setup is heavily inspired by work from [Jason Yee](https://github.com/jwsy), but modified for my own needs.
 
 ## What do I need?
 First, you need a few tools installed. You can do that any way you like, but I prefer to use [Homebrew](https://brew.sh) on my Mac. Install the following:
