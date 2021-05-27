@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+set -e
+set -o pipefail
+
+readonly tools_list="k3d kubectl helm realpath"
+
+_usage_tools() {
+  echo "USAGE: you need the following tools installed and on your PATH: ${tools_list}"
+  exit 1
+}
+
+for tool in ${tools_list}; do
+  command -v ${tool} &>/dev/null || _usage_tools
+done
+
+readonly cluster_name=${K3D_CLUSTER_NAME:-mycluster}
+readonly cluster_servers=${K3D_CLUSTER_SERVERS:-1}
+readonly cluster_agents=${K3D_CLUSTER_AGENTS:-3}
+readonly cluster_agent_volume=${K3D_AGENT_VOLUME:-./agent-volume}
+readonly cluster_setup_registry=${K3D_SETUP_REGISTRY:-0}
+readonly cluster_setup_rancher=${K3D_SETUP_RANCHER:-0}
+readonly kubeconfig_dir=${KUBECONFIG_DIR:-./kubeconfig}
+
+echo "
+K3D Setup
+=========
+The following values have been configured:
+
+Cluster Name                  : ${cluster_name}
+# of Server Nodes             : ${cluster_servers}
+# of Agent Nodes              : ${cluster_agents}
+Cluster Agent Volume Path     : ${cluster_agent_volume}
+Configure Registry in Cluster : ${cluster_setup_registry}
+Configure Rancher in Cluster  : ${cluster_setup_rancher}
+Kubeconfig Path               : ${kubeconfig_dir}/${cluster_name}
+"
+
+if [[ ${K3D_HANDSFREE} -ne 1 ]]; then
+  # Ask for confirmation before nuking pods
+  read -p "Do you want to create a K3D cluster with the settings above? (y/N) " -n 1 -r
+  echo ""
+
+  # Abort if reply is NOT 'y'
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Aborting.."
+    exit 1
+  fi
+fi
+
+### 1. Create a cluster with k3d that connects port 443 to the loadbalancer provided by k3d
+if [[ ${cluster_setup_registry} -eq 1 ]]; then
+  registry_args="--registry-create"
+else
+  registry_args=""
+fi
+
+
+
+k3d cluster create ${cluster_name} \
+  --api-port 6550 \
+  --servers ${cluster_servers} \
+  --agents ${cluster_agents} \
+  --port 443:443@loadbalancer \
+  --wait \
+  --kubeconfig-update-default=false \
+  -v $(realpath ${cluster_agent_volume}):/data/agent-volume \
+  ${registry_args}
+
+k3d cluster list
+
+### 2. Set up a kubeconfig so you can use kubectl in your current session
+KUBECONFIG_FILE="$(realpath ${kubeconfig_dir}/${cluster_name})"
+k3d kubeconfig get ${cluster_name} > $KUBECONFIG_FILE
+export KUBECONFIG=$KUBECONFIG_FILE
+chmod 600 $KUBECONFIG_FILE
+kubectl get nodes
+
+if [[ ${cluster_setup_rancher} -eq 1 ]]; then
+  ### 3. Install Rancher (and its dependency cert-manager) with helm according to the docs https://rancher.com/docs/rancher/v2.x/en/installation/k8s-install/helm-rancher/
+  helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+  kubectl create namespace cattle-system
+  kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v0.15.0/cert-manager.crds.yaml
+  kubectl create namespace cert-manager
+  helm repo add jetstack https://charts.jetstack.io
+  helm repo update
+
+  helm install \
+    cert-manager jetstack/cert-manager \
+    --namespace cert-manager \
+    --version v0.15.0 --wait
+  kubectl -n cert-manager rollout status deploy/cert-manager
+
+  helm install rancher rancher-latest/rancher \
+    --namespace cattle-system \
+    --set hostname=rancher.k3d.localhost --wait
+  kubectl -n cattle-system rollout status deploy/rancher
+fi
