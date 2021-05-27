@@ -45,6 +45,7 @@ You can set a number of envvars to configure the K3D cluster to your liking:
 - `K3D_SETUP_REGISTRY`: do you want a private registry? Set this to `1` (default: 0)
 - `K3D_SETUP_RANCHER`: do you want Rancher? Set this to `1` (default: 0)
 - `KUBECONFIG_DIR`: where do you want to store the custom KUBECONFIG files? (default: ./kubeconfig)
+- `K3D_HANDSFREE`: don't want a confirmation prompt? Set this to `1` (default: unset)
 
 For example:
 
