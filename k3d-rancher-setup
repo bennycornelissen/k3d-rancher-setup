@@ -95,3 +95,7 @@ if [[ ${cluster_setup_rancher} -eq 1 ]]; then
     --set hostname=rancher.k3d.localhost --wait
   kubectl -n cattle-system rollout status deploy/rancher
 fi
+
+echo "All Done! You can use the cluster by running the following command:
+
+export KUBECONFIG=$KUBECONFIG_FILE"
