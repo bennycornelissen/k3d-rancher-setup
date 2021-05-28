@@ -85,3 +85,6 @@ INFO[0001] Starting cluster 'mycluster'
 ...
 ```
 
+## Port Collision Detection
+If you try to run multiple clusters simultaneously, the `k3d-rancher-setup` script will automatically detect port collisions for the API, HTTP and HTTPS ports, and find the next free ports. This means that even if you set `K3D_LB_HTTP_PORT` you may end up with a different port. Check the output carefully!
+
