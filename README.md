@@ -28,6 +28,8 @@ Cluster Name                  : mycluster
 Cluster Agent Volume Path     : ./agent-volume
 Configure Registry in Cluster : 0
 Configure Rancher in Cluster  : 0
+Load Balancer HTTP port       : 80
+Load Balancer HTTPS port      : 443
 Kubeconfig Path               : ./kubeconfig/mycluster
 
 Do you want to create a K3D cluster with the settings above? (y/N)
@@ -44,6 +46,8 @@ You can set a number of envvars to configure the K3D cluster to your liking:
 - `K3D_AGENT_VOLUME`: you can bind-mount a local path into each agent
 - `K3D_SETUP_REGISTRY`: do you want a private registry? Set this to `1` (default: 0)
 - `K3D_SETUP_RANCHER`: do you want Rancher? Set this to `1` (default: 0)
+- `K3D_LB_HTTP_PORT`: configure which local port to bind to the load balancer for HTTP (default: 80)
+- `K3D_LB_HTTPS_PORT`: configure which local port to bind to the load balancer for HTTPS (default: 443)
 - `KUBECONFIG_DIR`: where do you want to store the custom KUBECONFIG files? (default: ./kubeconfig)
 - `K3D_HANDSFREE`: don't want a confirmation prompt? Set this to `1` (default: unset)
 

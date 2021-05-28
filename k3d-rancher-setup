@@ -22,6 +22,20 @@ readonly cluster_agent_volume=${K3D_AGENT_VOLUME:-./agent-volume}
 readonly cluster_setup_registry=${K3D_SETUP_REGISTRY:-0}
 readonly cluster_setup_rancher=${K3D_SETUP_RANCHER:-0}
 readonly kubeconfig_dir=${KUBECONFIG_DIR:-./kubeconfig}
+readonly cert_manager_version="v1.3.1"
+
+_allocate_free_port() {
+  local bind_port=$1
+  while netstat -an | grep -i listen | grep ".${bind_port}" &> /dev/null; do
+    let bind_port+=1
+  done
+
+  echo ${bind_port}
+}
+
+cluster_api_port=$(_allocate_free_port 6550)
+cluster_lb_http_port=$(_allocate_free_port ${K3D_LB_HTTP_PORT:-80})
+cluster_lb_https_port=$(_allocate_free_port ${K3D_LB_HTTPS_PORT:-443})
 
 echo "
 K3D Setup
@@ -34,6 +48,9 @@ Cluster Name                  : ${cluster_name}
 Cluster Agent Volume Path     : ${cluster_agent_volume}
 Configure Registry in Cluster : ${cluster_setup_registry}
 Configure Rancher in Cluster  : ${cluster_setup_rancher}
+Cluster API port              : ${cluster_api_port}
+Load Balancer HTTP port       : ${cluster_lb_http_port}
+Load Balancer HTTPS port      : ${cluster_lb_https_port}
 Kubeconfig Path               : ${kubeconfig_dir}/${cluster_name}
 "
 
@@ -59,11 +76,11 @@ fi
 
 ### Build a cluster!
 k3d cluster create ${cluster_name} \
-  --api-port 6550 \
+  --api-port ${cluster_api_port} \
   --servers ${cluster_servers} \
   --agents ${cluster_agents} \
-  --port 80:80@loadbalancer \
-  --port 443:443@loadbalancer \
+  --port ${cluster_lb_http_port}:80@loadbalancer \
+  --port ${cluster_lb_https_port}:443@loadbalancer \
   --wait \
   --kubeconfig-update-default=false \
   --k3s-server-arg="--no-deploy=traefik" \
@@ -83,7 +100,7 @@ kubectl get nodes
 ### Add some Helm repos, and make sure we install cert-manager for HTTPS support
 helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
 kubectl create namespace cattle-system
-kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v0.15.0/cert-manager.crds.yaml
+kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/${cert_manager_version}/cert-manager.crds.yaml
 kubectl create namespace cert-manager
 helm repo add jetstack https://charts.jetstack.io
 helm repo update
@@ -91,7 +108,7 @@ helm repo update
 helm install \
   cert-manager jetstack/cert-manager \
   --namespace cert-manager \
-  --version v0.15.0 --wait
+  --version ${cert_manager_version} --wait
 kubectl -n cert-manager rollout status deploy/cert-manager
 
 if [[ ${cluster_setup_rancher} -eq 1 ]]; then
