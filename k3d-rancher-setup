@@ -24,6 +24,9 @@ readonly cluster_setup_rancher=${K3D_SETUP_RANCHER:-0}
 readonly kubeconfig_dir=${KUBECONFIG_DIR:-./kubeconfig}
 readonly cert_manager_version="v1.3.1"
 
+### this function takes a TCP port as an argument and will check if it's
+### free to allocate. If not, it will auto increment until it finds a port
+### that can be used. Finally it will output the port number
 _allocate_free_port() {
   local bind_port=$1
   while netstat -an | grep -i listen | grep ".${bind_port}" &> /dev/null; do
