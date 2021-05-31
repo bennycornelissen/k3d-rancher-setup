@@ -28,6 +28,7 @@ Cluster Name                  : mycluster
 Cluster Agent Volume Path     : ./agent-volume
 Configure Registry in Cluster : 0
 Configure Rancher in Cluster  : 0
+Cluster API port              : 6550
 Load Balancer HTTP port       : 80
 Load Balancer HTTPS port      : 443
 Kubeconfig Path               : ./kubeconfig/mycluster
@@ -66,6 +67,9 @@ Cluster Name                  : mycluster
 Cluster Agent Volume Path     : ./agent-volume
 Configure Registry in Cluster : 1
 Configure Rancher in Cluster  : 1
+Cluster API port              : 6551
+Load Balancer HTTP port       : 81
+Load Balancer HTTPS port      : 444
 Kubeconfig Path               : ./kubeconfig/mycluster
 
 Do you want to create a K3D cluster with the settings above? (y/N) y
@@ -87,4 +91,7 @@ INFO[0001] Starting cluster 'mycluster'
 
 ## Port Collision Detection
 If you try to run multiple clusters simultaneously, the `k3d-rancher-setup` script will automatically detect port collisions for the API, HTTP and HTTPS ports, and find the next free ports. This means that even if you set `K3D_LB_HTTP_PORT` you may end up with a different port. Check the output carefully!
+
+## What are these extra directories for?
+The extra directories `agent-volume` and `hack` are ignored by git by default. The `agent-volume` dir is the default directory to get bind-mounted into K3D agents for storage, and the `hack` dir gives you a nice place to put some K8s manifests while you're hacking around.
 
