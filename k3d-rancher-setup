@@ -29,7 +29,7 @@ readonly cert_manager_version="v1.3.1"
 ### that can be used. Finally it will output the port number
 _allocate_free_port() {
   local bind_port=$1
-  while netstat -an | grep -i listen | grep ".${bind_port}" &> /dev/null; do
+  while netstat -an -f inet | grep -i listen | grep "\.${bind_port}" &> /dev/null; do
     let bind_port+=1
   done
 
