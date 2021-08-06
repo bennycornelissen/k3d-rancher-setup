@@ -16,6 +16,8 @@ done
 
 ### Set our base config
 readonly cluster_name=${K3D_CLUSTER_NAME:-mycluster}
+readonly k3s_image=${K3D_K3S_IMAGE:-rancher/k3s}
+readonly k3s_version=${K3D_K3S_VERSION:-latest}
 readonly cluster_servers=${K3D_CLUSTER_SERVERS:-1}
 readonly cluster_agents=${K3D_CLUSTER_AGENTS:-3}
 readonly cluster_agent_volume=${K3D_AGENT_VOLUME:-./agent-volume}
@@ -56,6 +58,8 @@ K3D Setup
 The following values have been configured:
 
 Cluster Name                  : ${cluster_name}
+K3s Image                     : ${k3s_image}
+K3s Version                   : ${k3s_version}
 # of Server Nodes             : ${cluster_servers}
 # of Agent Nodes              : ${cluster_agents}
 Cluster Agent Volume Path     : ${cluster_agent_volume}
@@ -90,6 +94,7 @@ fi
 ### Build a cluster!
 k3d cluster create ${cluster_name} \
   --api-port ${cluster_api_port} \
+  --image ${k3s_image}:${k3s_version} \
   --servers ${cluster_servers} \
   --agents ${cluster_agents} \
   --port ${cluster_lb_http_port}:80@loadbalancer \

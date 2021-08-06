@@ -42,6 +42,8 @@ Hit `y` on your keyboard, and within a minute or two you'll have a running K3D c
 You can set a number of envvars to configure the K3D cluster to your liking:
 
 - `K3D_CLUSTER_NAME`: name your cluster (default: mycluster)
+- `K3D_K3S_IMAGE`: Docker image to use for K3s (default: `rancher/k3s`)
+- `K3D_K3S_VERSION`: Docker image tag to use (default: `latest`)
 - `K3D_CLUSTER_SERVERS`: how many control plane nodes do you want? (default: 1)
 - `K3D_CLUSTER_AGENTS`: how many agents do you want? (default: 3)
 - `K3D_AGENT_VOLUME`: you can bind-mount a local path into each agent
