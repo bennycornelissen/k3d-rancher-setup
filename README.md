@@ -47,6 +47,7 @@ You can set a number of envvars to configure the K3D cluster to your liking:
 - `K3D_CLUSTER_SERVERS`: how many control plane nodes do you want? (default: 1)
 - `K3D_CLUSTER_AGENTS`: how many agents do you want? (default: 3)
 - `K3D_AGENT_VOLUME`: you can bind-mount a local path into each agent
+- `K3D_DNS_FORWARDERS`: optional list of DNS servers to use in Pods (default: undefined, which makes K3s use 8.8.8.8)
 - `K3D_SETUP_REGISTRY`: do you want a private registry? Set this to `1` (default: 0)
 - `K3D_SETUP_RANCHER`: do you want Rancher? Set this to `1` (default: 0)
 - `K3D_LB_HTTP_PORT`: configure which local port to bind to the load balancer for HTTP (default: 80)
@@ -93,6 +94,36 @@ INFO[0001] Starting cluster 'mycluster'
 
 ## Port Collision Detection
 If you try to run multiple clusters simultaneously, the `k3d-rancher-setup` script will automatically detect port collisions for the API, HTTP and HTTPS ports, and find the next free ports. This means that even if you set `K3D_LB_HTTP_PORT` you may end up with a different port. Check the output carefully!
+
+## Custom DNS Servers
+K3D runs a Docker-in-Docker setup, and uses its own Docker Bridge Network. Non-default Docker Bridge Networks use an internal DNS resolver that is a bit of magic on 127.0.0.11.
+
+As a result, the K3D 'nodes' get an /etc/resolv.conf that points to an IP address that is not routable from a container. By default K3D works around that by having a 'backup config' that just hard-codes 8.8.8.8 (Google DNS) which may or may not be allowed on your company network. By configuring your own DNS forwarders you can override this backup config, and supply our own DNS servers instead.
+
+Generally, if you need to access specific endpoints on your private/company network (not resolvable via 8.8.8.8) or if cluster creation gets stuck (for example on installing the Nginx Ingress controller Helm chart), this may be the option you need.
+
+Example:
+```
+$ K3D_CLUSTER_NAME=mycluster K3D_DNS_FORWARDERS="10.1.1.11, 10.1.1.12, 8.8.8.8" ./k3d-rancher-setup
+
+K3D Setup
+=========
+The following values have been configured:
+
+Cluster Name                  : mycluster
+K3s Image                     : rancher/k3s
+K3s Version                   : latest
+# of Server Nodes             : 1
+# of Agent Nodes              : 3
+Cluster Agent Volume Path     : ./agent-volume
+Configure Registry in Cluster : 0
+Configure Rancher in Cluster  : 0
+Cluster API port              : 6551
+Load Balancer HTTP port       : 81
+Load Balancer HTTPS port      : 444
+Custom DNS Forwarders         : 10.1.1.11, 10.1.1.12, 8.8.8.8
+Kubeconfig Path               : ./kubeconfig/mycluster
+```
 
 ## What are these extra directories for?
 The extra directories `agent-volume` and `hack` are ignored by git by default. The `agent-volume` dir is the default directory to get bind-mounted into K3D agents for storage, and the `hack` dir gives you a nice place to put some K8s manifests while you're hacking around.
