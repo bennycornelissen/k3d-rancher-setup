@@ -21,6 +21,7 @@ readonly k3s_version=${K3D_K3S_VERSION:-latest}
 readonly cluster_servers=${K3D_CLUSTER_SERVERS:-1}
 readonly cluster_agents=${K3D_CLUSTER_AGENTS:-3}
 readonly cluster_agent_volume=${K3D_AGENT_VOLUME:-./agent-volume}
+readonly dns_forwarders=${K3D_DNS_FORWARDERS:-undefined}
 readonly cluster_setup_registry=${K3D_SETUP_REGISTRY:-0}
 readonly cluster_setup_rancher=${K3D_SETUP_RANCHER:-0}
 readonly kubeconfig_dir=${KUBECONFIG_DIR:-./kubeconfig}
@@ -68,6 +69,7 @@ Configure Rancher in Cluster  : ${cluster_setup_rancher}
 Cluster API port              : ${cluster_api_port}
 Load Balancer HTTP port       : ${cluster_lb_http_port}
 Load Balancer HTTPS port      : ${cluster_lb_https_port}
+Custom DNS Forwarders         : ${dns_forwarders}
 Kubeconfig Path               : ${kubeconfig_dir}/${cluster_name}
 "
 
@@ -83,6 +85,28 @@ if [[ ${K3D_HANDSFREE} -ne 1 ]]; then
     exit 1
   fi
 fi
+
+### Custom DNS Forwarders
+# K3D runs a Docker-in-Docker setup, and uses its own Docker Bridge Network.
+# Non-default Docker Bridge Networks use an internal DNS resolver that is
+# a bit of magic on 127.0.0.11
+# As a result, the K3D 'nodes' get an /etc/resolv.conf that points to an
+# IP address that is not routable from a container. By default K3D works
+# around that by having a 'backup config' that just hard-codes 8.8.8.8
+# (Google DNS) which may or may not be allowed on your company network.
+# By configuring your own DNS forwarders you can override this behaviour
+if [[ ${dns_forwarders} != "undefined" ]]; then
+  dns_forwarders_cleaned=$(echo ${dns_forwarders} | tr ',' ' ')
+
+  for dns_forwarder in ${dns_forwarders_cleaned}; do
+    echo "nameserver ${dns_forwarder}"
+  done > ./agent-volume/resolv.conf
+
+  dns_args="-v $(realpath ./agent-volume/resolv.conf):/tmp/resolv.conf --k3s-server-arg=--resolv-conf=/tmp/resolv.conf"
+else
+  dns_args=""
+fi
+
 
 ### Define whether or not to create a registry
 if [[ ${cluster_setup_registry} -eq 1 ]]; then
@@ -104,7 +128,7 @@ k3d cluster create ${cluster_name} \
   --k3s-server-arg="--no-deploy=traefik" \
   -v $(realpath ./config/helm-ingress-nginx.yaml):/var/lib/rancher/k3s/server/manifests/helm-ingress-nginx.yaml \
   -v $(realpath ${cluster_agent_volume}):/data/agent-volume \
-  ${registry_args}
+  ${registry_args} ${dns_args}
 
 k3d cluster list
 
